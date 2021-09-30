@@ -23,7 +23,7 @@ In Thursday lab, we will often be working with exercises based on Introduction t
 
 ```{r setup, include=TRUE, echo=TRUE, eval=FALSE}
 suppressMessages({
-  install.packages(
+  install.packages(c(
     "tidymodels",
     "gghighlight",
     "glue",
@@ -47,7 +47,7 @@ suppressMessages({
     "waffle",
     "ggrepel",
     "ggpubr",
-    "openintro"
+    "openintro")
   )
 })
 ```
@@ -61,12 +61,14 @@ library(tidyverse)
 library(readr)
 library(gt)
 library(openintro)
+library(here)
 
 # Where is the root directory where all your labs live? If you want to set up as an .RProj, go for it. 
-rootdir <- ("~/Dropbox/Teaching/UCSB/EDS_222/EDS222_data/")
+# rootdir <- ("~/Dropbox/Teaching/UCSB/EDS_222/EDS222_data/")
+
 
 # This runs the script _common.R, which loads all the packages we'll need for today and does some extra stuff we won't really use, at least for now.
-source(file.path(rootdir,"labs","_common.R"))
+source(here("labs", "_common.R"))
 
 # For labs, we want to see all our code
 knitr::opts_chunk$set(echo = TRUE)
@@ -91,12 +93,16 @@ We will focus on two variables:
 Let's investigate these variable types as stored in `R`. Do they make sense to you? What about the variable `interest_rate`?
 
 ```{r}
-
+view(loans_full_schema)
 ```
 
 Create a dataframe called `loans` that cleans up the full dataset `loans_full_schema` to a) make the `homeownership` variable lower case (all caps is intense...), and b) reorder the "levels" of each variable into a sensible order.^[Note: reordering levels with `fct_relevel()` is helpful if your variable has a natural ordering to it, as all visuals will follow the order of the factor levels.] 
 
 ```{r}
+loans <- loans_full_schema %>% 
+  mutate(homeownership = tolower(homeownership),
+         homeownership = fct_relevel(homeownership, "rent", "mortgage", "own"),
+         application_type = fct_relevel(application_type, "joint", "individulal"))
 
 ```
 
@@ -107,7 +113,17 @@ A bar plot is a common way to display a single categorical variable. The left pa
 > Question: When might you prefer the left version of the bar plot? When might you prefer the right? 
 
 ```{r loan-homeownership-bar-plot, fig.cap = "Two bar plots: the left panel shows the counts and the right panel shows the proportions of values of the homeownership variable.", fig.asp=0.5, fig.fullwidth=TRUE}
+p_count <- ggplot(loans, aes(x = homeownership)) +
+  geom_bar(fill = IMSCOL["blue", "full"]) +
+  labs(x = "Homeownership", y = "Count")
 
+p_proportion <- loans %>% 
+  count(homeownership) %>% 
+  mutate(proportion = n / sum(n)) %>% 
+  ggplot(aes(x = homeownership, y = proportion)) +
+  geom_col(fill = IMSCOL["red", "full"]) +
+  labs(x = "Homeownership", y = "Proportion")
+p_count + p_proportion
 ```
 
 ## Contingency tables
@@ -141,7 +157,9 @@ For example, here we create three bar plots that visualize the relationship betw
 - First, we make a **stacked bar plot**, which simply stacks the count of observations in each `homeownership` type, coloring by `application_type`. We can see that most of the loan applicants live in mortgaged homes, but it's hard to say if a joint versus individual applicant is more or less likely to rent, own, or have a mortgage. 
 
 ```{r stacked, fig.margin=TRUE, fig.asp = 0.8, out.width="100%"}
-
+p_stacked <- ggplot(loans, aes(x = homeownership, fill = application_type)) +
+  geom_bar()
+p_stacked
 ```
 
 ### Exercise (work solo or with neighbors): 
